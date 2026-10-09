@@ -84,3 +84,37 @@ CREATE TABLE ai_analyses (
     duration_ms   INTEGER,
     created_at    TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE structural_elements (
+    id              BIGSERIAL PRIMARY KEY,
+    ai_analysis_id  BIGINT        NOT NULL REFERENCES ai_analyses(id) ON DELETE CASCADE,
+    element_type_id BIGINT        NOT NULL REFERENCES element_types(id),
+    material_id     BIGINT        REFERENCES materials(id),
+    start_x         NUMERIC(10,2) NOT NULL,
+    start_y         NUMERIC(10,2) NOT NULL,
+    end_x           NUMERIC(10,2),
+    end_y           NUMERIC(10,2),
+    width           NUMERIC(10,2),
+    height          NUMERIC(10,2),
+    thickness       NUMERIC(10,2),
+    confidence      NUMERIC(5,4)
+);
+
+CREATE TABLE models_3d (
+    id             BIGSERIAL PRIMARY KEY,
+    floor_plan_id  BIGINT       NOT NULL REFERENCES floor_plans(id) ON DELETE CASCADE,
+    ai_analysis_id BIGINT       NOT NULL REFERENCES ai_analyses(id),
+    file_url       VARCHAR(500),
+    format         VARCHAR(20)  NOT NULL DEFAULT 'GLB',
+    element_count  INTEGER      NOT NULL DEFAULT 0,
+    created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE activity_logs (
+    id         BIGSERIAL PRIMARY KEY,
+    user_id    BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    action     VARCHAR(100) NOT NULL,
+    details    TEXT,
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
