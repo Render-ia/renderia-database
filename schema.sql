@@ -19,3 +19,33 @@ CREATE TABLE users (
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- ---------- 2. Catálogos ----------
+
+CREATE TABLE building_types (
+    id          BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(80)  NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+
+CREATE TABLE element_types (
+    id          BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(80)  NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+
+CREATE TABLE materials (
+    id          BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(80)  NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+
+CREATE TABLE ai_models (
+    id               BIGSERIAL PRIMARY KEY,
+    name             VARCHAR(100) NOT NULL,
+    provider         VARCHAR(50)  NOT NULL,
+    model_identifier VARCHAR(150) NOT NULL UNIQUE,
+    is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_default       BOOLEAN      NOT NULL DEFAULT FALSE
+);
