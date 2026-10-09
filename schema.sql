@@ -1,0 +1,21 @@
+-- =========================================
+-- Render.IA - Esquema de base de datos
+-- =========================================
+
+-- ---------- 1. Autenticación ----------
+
+CREATE TABLE roles (
+    id          BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(50)  NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+
+CREATE TABLE users (
+    id            BIGSERIAL PRIMARY KEY,
+    role_id       BIGINT       NOT NULL REFERENCES roles(id),
+    full_name     VARCHAR(120) NOT NULL,
+    email         VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
