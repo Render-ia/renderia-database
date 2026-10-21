@@ -3,7 +3,7 @@
 Base de datos de **Render.IA**, una plataforma que usa inteligencia artificial para convertir planos 2D en modelos estructurales 3D.
 
 - **Motor:** PostgreSQL (Neon, región Oregon)
-- **Tablas:** 12 (nombres en inglés, datos en español)
+- **Tablas:** 13 (nombres en inglés, datos en español)
 - **Integrantes:** Juan David Moreno, Felipe Cerón
 
 ## Archivos
@@ -12,6 +12,7 @@ Base de datos de **Render.IA**, una plataforma que usa inteligencia artificial p
 |---|---|
 | `schema.sql` | Creación de las 12 tablas |
 | `seed.sql` | Datos iniciales de roles y catálogos |
+| `migrations/` | Cambios aplicados después de la primera versión, en orden |
 
 ## Diagrama entidad-relación
 
@@ -29,6 +30,7 @@ erDiagram
     materials ||--o{ structural_elements : "compone"
     floor_plans ||--o{ models_3d : "genera"
     ai_analyses ||--o{ models_3d : "origina"
+    floor_plans ||--|| floor_plan_files : "guarda la imagen en"
 
     roles {
         bigint id PK
@@ -118,6 +120,11 @@ erDiagram
         varchar format
         int element_count
         timestamp created_at
+    }
+    floor_plan_files {
+        bigint floor_plan_id PK
+        varchar content_type
+        bytea data
     }
     activity_logs {
         bigint id PK

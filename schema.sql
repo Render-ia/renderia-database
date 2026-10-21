@@ -118,3 +118,12 @@ CREATE TABLE activity_logs (
     details    TEXT,
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+-- ---------- 4. Archivos ----------
+
+-- Imagen original de cada plano. Va en una tabla aparte para que listar
+-- planos no cargue las imágenes completas.
+CREATE TABLE floor_plan_files (
+    floor_plan_id BIGINT      PRIMARY KEY REFERENCES floor_plans(id) ON DELETE CASCADE,
+    content_type  VARCHAR(50) NOT NULL,
+    data          BYTEA       NOT NULL
+);
