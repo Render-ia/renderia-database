@@ -23,7 +23,8 @@ INSERT INTO element_types (name, description) VALUES
 ('Losa',     'Placa horizontal de piso o entrepiso'),
 ('Puerta',   'Abertura de paso en un muro'),
 ('Ventana',  'Abertura de luz y ventilación en un muro'),
-('Escalera', 'Conexión vertical entre pisos');
+('Escalera', 'Conexión vertical entre pisos'),
+('Ascensor', 'Cabina y foso del ascensor en el núcleo del edificio');
 
 INSERT INTO materials (name, description) VALUES
 ('Concreto reforzado', 'Concreto con acero de refuerzo'),
