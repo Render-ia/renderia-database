@@ -8,21 +8,23 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
-      - name: Check each service
+      - name: Full cycle with the engineer demo account (read only)
         run: |
-          for url in \
-            https://renderia-ai.onrender.com/health \
-            https://renderia-ai.onrender.com/capabilities \
-            https://renderia-backend.onrender.com/api/v1/health \
-            https://renderia-frontend.vercel.app/; do
-            for attempt in 1 2 3; do
-              out=$(curl -s -o body.txt -D headers.txt -w '%{http_code} %{time_total}s' --max-time 150 "$url" || echo "000 timeout")
-              server=$(grep -i '^x-render-routing\|^rndr-id\|^server' headers.txt | tr -d '\r' | tr '\n' ' ')
-              body=$(head -c 300 body.txt | tr '\n\r' '  ')
-              echo "::notice title=$url (intento $attempt)::$out | $server | $body"
-              case "$out" in 200*) break;; esac
-              sleep 20
-            done
+          API=https://renderia-backend.onrender.com/api/v1
+          note() { echo "::notice title=$1::$2"; }
+          curl -s --max-time 120 https://renderia-ai.onrender.com/health > /dev/null
+          TOKEN=$(curl -s --max-time 120 -X POST "$API/auth/demo" -H 'Content-Type: application/json' -d '{"role":"Ingeniero"}' | jq -r .token)
+          [ -n "$TOKEN" ] && [ "$TOKEN" != null ] || { note login "no token"; exit 1; }
+          H="Authorization: Bearer $TOKEN"
+          PLAN=$(curl -s --max-time 60 "$API/floor-plans" -H "$H" | jq -c '[.[] | {id, fileName, scale, contentType}] | .[0]')
+          note plan "$PLAN"
+          PLAN_ID=$(echo "$PLAN" | jq -r .id)
+          MODELS=$(curl -s --max-time 60 "$API/ai-models" -H "$H" | jq -c '[.[] | {id, provider, modelIdentifier, isActive}]')
+          note models "$MODELS"
+          for MID in $(echo "$MODELS" | jq -r '.[] | select(.isActive != false) | .id'); do
+            OUT=$(curl -s -o body.json -w '%{http_code} %{time_total}s' --max-time 300 -X POST "$API/ai/analyze" -H "$H" \
+              -H 'Content-Type: application/json' -d "{\"floorPlanId\":$PLAN_ID,\"aiModelId\":$MID,\"scale\":\"1:100\"}")
+            note "analyze model $MID" "$OUT | elements=$(jq '.elements|length' body.json 2>/dev/null) | $(head -c 250 body.json | tr '\n' ' ')"
           done
