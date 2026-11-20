@@ -1,0 +1,28 @@
+name: Diagnose live services
+
+on:
+  push:
+    paths: ['.github/workflows/diagnose.yml']
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check each service
+        run: |
+          for url in \
+            https://renderia-ai.onrender.com/health \
+            https://renderia-ai.onrender.com/capabilities \
+            https://renderia-backend.onrender.com/api/v1/health \
+            https://renderia-frontend.vercel.app/; do
+            for attempt in 1 2 3; do
+              out=$(curl -s -o body.txt -D headers.txt -w '%{http_code} %{time_total}s' --max-time 150 "$url" || echo "000 timeout")
+              server=$(grep -i '^x-render-routing\|^rndr-id\|^server' headers.txt | tr -d '\r' | tr '\n' ' ')
+              body=$(head -c 300 body.txt | tr '\n\r' '  ')
+              echo "::notice title=$url (intento $attempt)::$out | $server | $body"
+              case "$out" in 200*) break;; esac
+              sleep 20
+            done
+          done
