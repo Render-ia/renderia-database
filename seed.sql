@@ -33,4 +33,6 @@ INSERT INTO materials (name, description) VALUES
 ('Drywall',            'Placas de yeso para divisiones livianas');
 
 INSERT INTO ai_models (name, provider, model_identifier, is_active, is_default) VALUES
-('Respuesta de ejemplo', 'mock', 'mock-v1', TRUE, TRUE);
+('Respuesta de ejemplo',        'mock',         'mock-v1',            TRUE, TRUE),
+('Detector de visión local',    'local-vision', 'renderia-vision-v1', TRUE, FALSE),
+('Detector de visión + Gemini', 'gemini',       'gemini:flash',       TRUE, FALSE);

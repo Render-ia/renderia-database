@@ -72,3 +72,12 @@ jobs:
             END;
           END $$;
           SQL
+      - name: The three AI models exist once, with a single default
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF (SELECT count(*) FROM ai_models) <> 3 THEN RAISE EXCEPTION 'Faltan modelos de IA o están repetidos'; END IF;
+            IF (SELECT count(*) FROM ai_models WHERE is_default) <> 1 THEN RAISE EXCEPTION 'Debe haber un solo modelo predeterminado'; END IF;
+            IF NOT EXISTS (SELECT 1 FROM ai_models WHERE provider = 'gemini' AND model_identifier = 'gemini:flash') THEN RAISE EXCEPTION 'Falta el modelo con Gemini'; END IF;
+          END $$;
+          SQL
