@@ -137,6 +137,25 @@ CREATE TABLE floor_plan_files (
     data          BYTEA       NOT NULL
 );
 
+-- Conversación de cada usuario con el copiloto sobre un análisis.
+CREATE TABLE copilot_messages (
+    id             BIGSERIAL   PRIMARY KEY,
+    ai_analysis_id BIGINT      NOT NULL REFERENCES ai_analyses(id) ON DELETE CASCADE,
+    user_id        BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role           VARCHAR(10) NOT NULL CHECK (role IN ('user', 'model')),
+    content        TEXT        NOT NULL,
+    proposals      TEXT,
+    created_at     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Parámetros, precios y AIU del presupuesto de cada análisis (JSON).
+CREATE TABLE budget_settings (
+    ai_analysis_id BIGINT    PRIMARY KEY REFERENCES ai_analyses(id) ON DELETE CASCADE,
+    inputs         TEXT      NOT NULL,
+    updated_by     BIGINT    REFERENCES users(id) ON DELETE SET NULL,
+    updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ---------- 5. Índices ----------
 
 -- PostgreSQL no indexa solo las llaves foráneas; estas son las que más se consultan.
@@ -147,3 +166,4 @@ CREATE INDEX idx_structural_elements_analysis_id ON structural_elements(ai_analy
 CREATE INDEX idx_models_3d_analysis_id ON models_3d(ai_analysis_id);
 CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
 CREATE INDEX idx_project_members_user_id ON project_members(user_id);
+CREATE INDEX idx_copilot_messages_analysis_user ON copilot_messages(ai_analysis_id, user_id);
