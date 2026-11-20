@@ -5,22 +5,41 @@ on:
     paths: ['.github/workflows/check-demo.yml']
 
 jobs:
-  check:
+  fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Galeras projects
+      - name: Torre Galeras as a 12-floor residential building
         run: |
+          set -e
           API=https://renderia-backend.onrender.com/api/v1
+          note() { echo "::notice title=$1::$2"; }
           curl -s --max-time 120 "$API/health" > /dev/null
-          ENG=$(curl -s -X POST "$API/auth/demo" -H 'Content-Type: application/json' -d '{"role":"Ingeniero"}' | jq -r '.user.id')
-          TOKEN=$(curl -s -X POST "$API/auth/demo" -H 'Content-Type: application/json' -d '{"role":"Revisor"}' | jq -r .token)
+          TOKEN=$(curl -s -X POST "$API/auth/demo" -H 'Content-Type: application/json' -d '{"role":"Ingeniero"}' | jq -r .token)
           H="Authorization: Bearer $TOKEN"
-          curl -s "$API/projects" -H "$H" > p.json; curl -s "$API/floor-plans" -H "$H" > f.json; curl -s "$API/analyses" -H "$H" > a.json
-          echo "::notice title=engineer id::$ENG"
-          for id in $(jq -r '.[] | select(.name|test("aleras|Pasto Centro|casa tipo")) | .id' p.json); do
-            P=$(jq -c ".[] | select(.id==$id) | {id,name,userId,buildingTypeId,description}" p.json)
-            F=$(jq -c "[.[] | select(.projectId==$id) | {id,fileName,floorLevel,scale}]" f.json)
-            A=$(jq -c --argjson f "$F" '[.[] | select(.floorPlanId as $x | $f | map(.id) | index($x)) | {id,floorPlanId,status,aiModelId}]' a.json)
-            echo "::notice title=project $id::$P | plans $F | analyses $A"
+          J='Content-Type: application/json'
+
+          # Project 6 becomes "Torre Galeras", residential building; the backup gets its type too.
+          note p6 "$(curl -s -X PUT "$API/projects/6" -H "$H" -H "$J" -d '{"name":"Torre Galeras","description":"Edificio residencial de 12 pisos. Planta tipo con 4 apartamentos, escalera y 2 ascensores.","location":"Pasto, Nariño","buildingTypeId":2}' | jq -c '{id,name,buildingTypeId}')"
+          P5=$(curl -s "$API/projects/5" -H "$H")
+          note p5 "$(curl -s -X PUT "$API/projects/5" -H "$H" -H "$J" -d "$(echo "$P5" | jq -c '{name,description,location,buildingTypeId:2}')" | jq -c '{id,name,buildingTypeId}')"
+
+          # Typical floor: the finished analysis of floor 1, repeated on floors 2 to 12.
+          SOURCE=18
+          A=$(curl -s "$API/analyses/$SOURCE" -H "$H")
+          ELEMENTS=$(curl -s "$API/analyses/$SOURCE/elements" -H "$H" | jq -c '[.[] | {elementTypeId,materialId,startX,startY,endX,endY,width,height,thickness,confidence}]')
+          COUNT=$(echo "$ELEMENTS" | jq length)
+          URL=$(curl -s "$API/floor-plans/8" -H "$H" | jq -r .fileUrl)
+          curl -s -o plan.png "$URL"
+          file plan.png
+          EXISTING=$(curl -s "$API/projects/6/floor-plans" -H "$H" | jq -c '[.[].floorLevel]')
+          for LEVEL in $(seq 2 12); do
+            if echo "$EXISTING" | jq -e "index($LEVEL)" > /dev/null; then continue; fi
+            PLAN=$(curl -s -X POST "$API/projects/6/floor-plans" -H "$H" -F "file=@plan.png;type=image/png;filename=torre-galeras-planta-tipo.png" -F floorLevel=$LEVEL -F scale=1:100 | jq -r .id)
+            ID=$(curl -s -X POST "$API/analyses" -H "$H" -H "$J" -d "{\"floorPlanId\":$PLAN,\"aiModelId\":$(echo "$A" | jq .aiModelId)}" | jq -r .id)
+            curl -s -X PUT "$API/analyses/$ID" -H "$H" -H "$J" -d '{"status":"PROCESSING"}' > /dev/null
+            curl -s -X POST "$API/analyses/$ID/elements" -H "$H" -H "$J" -d "$ELEMENTS" > /dev/null
+            curl -s -X POST "$API/models-3d" -H "$H" -H "$J" -d "{\"floorPlanId\":$PLAN,\"aiAnalysisId\":$ID,\"fileUrl\":null,\"format\":\"GLB\",\"elementCount\":$COUNT}" > /dev/null
+            DONE=$(curl -s -X PUT "$API/analyses/$ID" -H "$H" -H "$J" -d "$(echo "$A" | jq -c '{status:"COMPLETED",rawResponse,durationMs}')" | jq -r .status)
+            note "piso $LEVEL" "plano $PLAN, análisis $ID: $DONE"
           done
