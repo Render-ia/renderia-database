@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  schema:
+    name: Load schema, seed and migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: renderia
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: renderia
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create tables
+        run: psql -v ON_ERROR_STOP=1 -f schema.sql
+      - name: Load seed data
+        run: psql -v ON_ERROR_STOP=1 -f seed.sql
+      - name: Apply migrations twice (they must be repeatable)
+        run: |
+          for f in migrations/*.sql; do psql -v ON_ERROR_STOP=1 -f "$f"; done
+          for f in migrations/*.sql; do psql -v ON_ERROR_STOP=1 -f "$f"; done
+      - name: Check there are at least 10 tables
+        run: |
+          tables=$(psql -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'")
+          echo "Tablas: $tables"
+          test "$tables" -ge 10
+      - name: Deleting an analysis also deletes its 3D model
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO users (role_id, full_name, email, password_hash)
+            VALUES ((SELECT id FROM roles WHERE name = 'Ingeniero'), 'Prueba CI', 'ci@renderia.co', 'x');
+          INSERT INTO projects (user_id, name) VALUES ((SELECT id FROM users WHERE email = 'ci@renderia.co'), 'Proyecto CI');
+          INSERT INTO floor_plans (project_id, file_name, file_url) VALUES ((SELECT max(id) FROM projects), 'plano.svg', 'x');
+          INSERT INTO ai_analyses (floor_plan_id, ai_model_id) VALUES ((SELECT max(id) FROM floor_plans), (SELECT min(id) FROM ai_models));
+          INSERT INTO models_3d (floor_plan_id, ai_analysis_id) VALUES ((SELECT max(id) FROM floor_plans), (SELECT max(id) FROM ai_analyses));
+          DELETE FROM ai_analyses WHERE id = (SELECT max(id) FROM ai_analyses);
+          DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM models_3d) THEN RAISE EXCEPTION 'El modelo 3D no se borró'; END IF;
+          END $$;
+          SQL
