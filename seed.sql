@@ -14,7 +14,9 @@ INSERT INTO building_types (name, description) VALUES
 ('Edificio residencial', 'Edificio de apartamentos'),
 ('Oficina',              'Espacio de trabajo administrativo'),
 ('Local comercial',      'Tienda o establecimiento de comercio'),
-('Bodega',               'Espacio de almacenamiento');
+('Bodega',               'Espacio de almacenamiento'),
+('Institución educativa', 'Colegio, escuela o universidad'),
+('Centro de salud',      'Hospital, clínica o centro de atención médica');
 
 INSERT INTO element_types (name, description) VALUES
 ('Muro',     'Elemento vertical que divide o soporta'),
