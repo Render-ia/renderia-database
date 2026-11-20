@@ -104,7 +104,7 @@ CREATE TABLE structural_elements (
 CREATE TABLE models_3d (
     id             BIGSERIAL PRIMARY KEY,
     floor_plan_id  BIGINT       NOT NULL REFERENCES floor_plans(id) ON DELETE CASCADE,
-    ai_analysis_id BIGINT       NOT NULL REFERENCES ai_analyses(id),
+    ai_analysis_id BIGINT       NOT NULL REFERENCES ai_analyses(id) ON DELETE CASCADE,
     file_url       VARCHAR(500),
     format         VARCHAR(20)  NOT NULL DEFAULT 'GLB',
     element_count  INTEGER      NOT NULL DEFAULT 0,
@@ -127,3 +127,13 @@ CREATE TABLE floor_plan_files (
     content_type  VARCHAR(50) NOT NULL,
     data          BYTEA       NOT NULL
 );
+
+-- ---------- 5. Índices ----------
+
+-- PostgreSQL no indexa solo las llaves foráneas; estas son las que más se consultan.
+CREATE INDEX idx_projects_user_id ON projects(user_id);
+CREATE INDEX idx_floor_plans_project_id ON floor_plans(project_id);
+CREATE INDEX idx_ai_analyses_floor_plan_id ON ai_analyses(floor_plan_id);
+CREATE INDEX idx_structural_elements_analysis_id ON structural_elements(ai_analysis_id);
+CREATE INDEX idx_models_3d_analysis_id ON models_3d(ai_analysis_id);
+CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
