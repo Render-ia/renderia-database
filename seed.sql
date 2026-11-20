@@ -5,7 +5,9 @@
 INSERT INTO roles (name, description) VALUES
 ('Administrador', 'Gestiona usuarios, catálogos y modelos de IA'),
 ('Ingeniero',     'Crea proyectos y analiza planos estructurales'),
-('Estudiante',    'Usa la plataforma con fines académicos');
+('Estudiante',    'Usa la plataforma con fines académicos'),
+('Revisor',       'Revisa y valida los proyectos de todos, sin borrar'),
+('Cliente',       'Ve los proyectos que le comparten, en modo cliente');
 
 INSERT INTO building_types (name, description) VALUES
 ('Vivienda unifamiliar', 'Casa para una sola familia'),

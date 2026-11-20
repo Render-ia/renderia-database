@@ -20,6 +20,8 @@ Base de datos de **Render.IA**, una plataforma que usa inteligencia artificial p
 erDiagram
     roles ||--o{ users : "tiene"
     users ||--o{ projects : "crea"
+    projects ||--o{ project_members : "se comparte con"
+    users ||--o{ project_members : "recibe"
     users ||--o{ activity_logs : "registra"
     building_types ||--o{ projects : "clasifica"
     projects ||--o{ floor_plans : "contiene"
@@ -44,6 +46,12 @@ erDiagram
         varchar email
         varchar password_hash
         boolean is_active
+        timestamp created_at
+    }
+    project_members {
+        bigint id PK
+        bigint project_id FK
+        bigint user_id FK
         timestamp created_at
     }
     building_types {
