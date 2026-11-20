@@ -1,0 +1,26 @@
+name: Check demo data
+
+on:
+  push:
+    paths: ['.github/workflows/check-demo.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Galeras projects
+        run: |
+          API=https://renderia-backend.onrender.com/api/v1
+          curl -s --max-time 120 "$API/health" > /dev/null
+          ENG=$(curl -s -X POST "$API/auth/demo" -H 'Content-Type: application/json' -d '{"role":"Ingeniero"}' | jq -r '.user.id')
+          TOKEN=$(curl -s -X POST "$API/auth/demo" -H 'Content-Type: application/json' -d '{"role":"Revisor"}' | jq -r .token)
+          H="Authorization: Bearer $TOKEN"
+          curl -s "$API/projects" -H "$H" > p.json; curl -s "$API/floor-plans" -H "$H" > f.json; curl -s "$API/analyses" -H "$H" > a.json
+          echo "::notice title=engineer id::$ENG"
+          for id in $(jq -r '.[] | select(.name|test("aleras|Pasto Centro|casa tipo")) | .id' p.json); do
+            P=$(jq -c ".[] | select(.id==$id) | {id,name,userId,buildingTypeId,description}" p.json)
+            F=$(jq -c "[.[] | select(.projectId==$id) | {id,fileName,floorLevel,scale}]" f.json)
+            A=$(jq -c --argjson f "$F" '[.[] | select(.floorPlanId as $x | $f | map(.id) | index($x)) | {id,floorPlanId,status,aiModelId}]' a.json)
+            echo "::notice title=project $id::$P | plans $F | analyses $A"
+          done
