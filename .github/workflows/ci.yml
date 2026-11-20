@@ -52,3 +52,23 @@ jobs:
             IF EXISTS (SELECT 1 FROM models_3d) THEN RAISE EXCEPTION 'El modelo 3D no se borró'; END IF;
           END $$;
           SQL
+      - name: Five roles exist and a project can be shared once
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF (SELECT count(*) FROM roles) <> 5 THEN RAISE EXCEPTION 'Faltan roles'; END IF;
+          END $$;
+          INSERT INTO users (role_id, full_name, email, password_hash)
+            VALUES ((SELECT id FROM roles WHERE name = 'Cliente'), 'Cliente CI', 'cliente-ci@renderia.co', 'x');
+          INSERT INTO projects (user_id, name) VALUES ((SELECT id FROM users WHERE email = 'ci@renderia.co'), 'Compartido CI');
+          INSERT INTO project_members (project_id, user_id)
+            VALUES ((SELECT max(id) FROM projects), (SELECT id FROM users WHERE email = 'cliente-ci@renderia.co'));
+          DO $$ BEGIN
+            BEGIN
+              INSERT INTO project_members (project_id, user_id)
+                VALUES ((SELECT max(id) FROM projects), (SELECT id FROM users WHERE email = 'cliente-ci@renderia.co'));
+              RAISE EXCEPTION 'Se compartió dos veces';
+            EXCEPTION WHEN unique_violation THEN NULL;
+            END;
+          END $$;
+          SQL

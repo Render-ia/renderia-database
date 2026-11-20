@@ -118,6 +118,15 @@ CREATE TABLE activity_logs (
     details    TEXT,
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+-- Proyectos compartidos: el dueño le da acceso de lectura a un cliente o a un colega.
+CREATE TABLE project_members (
+    id         BIGSERIAL PRIMARY KEY,
+    project_id BIGINT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id    BIGINT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, user_id)
+);
+
 -- ---------- 4. Archivos ----------
 
 -- Imagen original de cada plano. Va en una tabla aparte para que listar
@@ -137,3 +146,4 @@ CREATE INDEX idx_ai_analyses_floor_plan_id ON ai_analyses(floor_plan_id);
 CREATE INDEX idx_structural_elements_analysis_id ON structural_elements(ai_analysis_id);
 CREATE INDEX idx_models_3d_analysis_id ON models_3d(ai_analysis_id);
 CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
+CREATE INDEX idx_project_members_user_id ON project_members(user_id);
